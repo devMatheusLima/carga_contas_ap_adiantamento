@@ -6,25 +6,58 @@ wb = Workbook()
 ws = wb.active
 
 
-def geraHeader(idHeader):
+
+def geraHeader():
+        dictHeader = dict()
+        with codecs.open('csv\\tit_ap_adiantamento.csv',encoding='utf-8') as tit_ap:
+                next(tit_ap, None)
+                idHeader = 0
+                for line in tit_ap:
+                        idHeader += 1
+                        formatedLine =  line.strip().split("ϡ")
+                        numNFF = formatedLine[0]
+                        saldo = formatedLine[22]
+                        dataNF = formatedLine[15]
+                        fornecedor = formatedLine[6]
+                        cnpj = formatedLine[6]
+                        dataVencimento = formatedLine[17]
+                        dictHeader[idHeader,numNFF,cnpj] = [idHeader,numNFF,saldo, dataNF,fornecedor, cnpj, dataVencimento]
+                return dictHeader
+dictHeader = geraHeader()
+                    
+
+def geraLine():
+        dictLine = dict()
+        with codecs.open('csv\\tit_ap_adiantamento.csv',encoding='utf-8') as tit_ap_line:
+                next(tit_ap_line, None)
+                idHeader = 0
+                for line in tit_ap_line:
+                        idHeader += 1
+                        formatedLine =  line.strip().split("ϡ")
+                        numNFF = formatedLine[0]
+                        saldo = formatedLine[22]
+                        dataNF = formatedLine[15]
+                        fornecedor = formatedLine[6]
+                        cnpj = formatedLine[6]
+                        dataVencimento = formatedLine[17]
+                        dictLine[idHeader,numNFF,cnpj] = [idHeader,numNFF,saldo, dataNF,fornecedor, cnpj, dataVencimento]
+                return dictLine
+dictLine = geraLine()
+
+def header():
         wb = Workbook()
         ws = wb.active
+        for line in dictHeader:
+                row = []   
+                idHeader = dictHeader[line][0]
+                numNFF = dictHeader[line][1]
+                saldo = dictHeader[line][2]
+                dataNF = dictHeader[line][3]
+                fornecedor = dictHeader[line][4]
+                cnpj = dictHeader[line][5]
+                dataVencimento = dictHeader[line][6]
+                
 
-        dictHeader = dict()
-        idHeader = 0
-        with codecs.open('csv\\tit_ap_adiantamento.csv',encoding='utf-8') as tit_ap:
-                row = []       
-                for line in tit_ap:
-                    formatedLine =  line.strip().split("ϡ")
-                    numNFF = formatedLine[0]
-                    saldo = formatedLine[22]
-                    dataNF = formatedLine[15]
-                    fornecedor = formatedLine[6]
-                    cnpj = formatedLine[6]
-                    dataVencimento = formatedLine[17]
-
-
-        
                 row.append(idHeader)#*Invoice ID
                 row.append("CEDISA_BU")#*Business Unit
                 row.append("CARGA")#*Source
@@ -126,31 +159,25 @@ def geraHeader(idHeader):
                 row.append("")# Attribute Date 5
                 row.append("JL_BR_APXINWKB_AP_INVOICES")# Global Attribute Category
                 row.append("N")# Global Attribute 1
-
+                
                 ws.append(row)
-        
-           
         wb.save("Plan_Contas_AP_ADIANTAMENTO_HEADER_20220331_GOLIVE.xlsx")
 
+header()
 
-
-def geraLine(idHeader):
+def line():
         wb = Workbook()
         ws = wb.active
-
-        dictHeader = dict()
-        idHeader = 0
-        with codecs.open('csv\\tit_ap_adiantamento.csv',encoding='utf-8') as tit_ap:
-                row = []       
-                for line in tit_ap:
-                    formatedLine =  line.strip().split("ϡ")
-                    numNFF = formatedLine[0]
-                    saldo = formatedLine[22]
-                    dataNF = formatedLine[15]
-                    dataVencimento = formatedLine[17]
-
-
-        
+        for line in dictLine:
+                row = []   
+                idHeader = dictLine[line][0]
+                numNFF = dictLine[line][1]
+                saldo = dictLine[line][2]
+                dataNF = dictLine[line][3]
+                fornecedor = dictLine[line][4]
+                cnpj = dictLine[line][5]
+                dataVencimento = dictLine[line][6]
+                
                 row.append(idHeader)# '*Invoice ID'
                 row.append("1")# 'Line Number'
                 row.append("ITEM")# '*Line Type'
@@ -309,11 +336,8 @@ def geraLine(idHeader):
                 row.append("")# 'Project Name'	
                 row.append("")# 'Task Name'
 
-
                 ws.append(row)
-        
-           
+
         wb.save("Plan_Contas_AP_ADIANTAMENTO_LINE_20220331_GOLIVE.xlsx")
 
-geraHeader()
-geraLine()
+line()
