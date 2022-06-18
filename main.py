@@ -1,11 +1,49 @@
 from openpyxl import Workbook
 import codecs
 import pandas as pd
+from datetime import datetime
 
 wb = Workbook()
 ws = wb.active
 
+def geraDictFornecedores():
+        fornecedores = dict()
 
+        # read_file = pd.read_excel ('csv\\Fornecedor.xlsx')
+        # read_file.to_csv ('csv\\Fornecedor.csv', index = None, header=True,sep="ϡ")
+
+        with codecs.open('csv\\Fornecedor.csv',encoding='utf-8') as csv_file_fornec:
+                next(csv_file_fornec, None)
+                for line in csv_file_fornec:
+                        x =  line.strip().split('ϡ')
+                        nome_fornec = x[2]
+                        numero_fornec_oracle = x[0]
+                        cgc = x[1]
+
+                        fornecedores[cgc] = [cgc, numero_fornec_oracle, nome_fornec]
+                return fornecedores
+fornecedores =  geraDictFornecedores()
+
+def geraDictEmitentes():
+    emitentes = dict()
+
+#     read_file = pd.read_excel ('csv\\emitentes.xlsx')
+#     read_file.to_csv ('csv\\emitentes.csv', index = None, header=True,sep="ϡ")
+
+    with codecs.open('csv\\emitentes.csv',encoding='utf-8') as csv_file_emitente:
+        # next(csv_file_emitente, None)
+        for line in csv_file_emitente:
+            x =  line.strip().replace('"','').split('ϡ')
+            if len(x) == 4:
+                # print(x)
+            # print(x)
+                cod_emitente = x[0]
+                nome_emitente = x[1]
+                cgc = x[2]
+            
+                emitentes[cod_emitente] = [cod_emitente, nome_emitente, cgc]
+        return emitentes
+emitentes =  geraDictEmitentes()
 
 def geraHeader():
         dictHeader = dict()
@@ -15,13 +53,39 @@ def geraHeader():
                 for line in tit_ap:
                         idHeader += 1
                         formatedLine =  line.strip().split("ϡ")
-                        numNFF = formatedLine[0]
-                        saldo = formatedLine[22]
-                        dataNF = formatedLine[15]
+                        # print(formatedLine)
                         fornecedor = formatedLine[6]
-                        cnpj = formatedLine[6]
-                        dataVencimento = formatedLine[17]
-                        dictHeader[idHeader,numNFF,cnpj] = [idHeader,numNFF,saldo, dataNF,fornecedor, cnpj, dataVencimento]
+
+                        try:
+                                formatedLine.append(emitentes[fornecedor][1])
+                        except:
+                                continue
+                        # esse eu peguei direto do emitentes
+                        cgc_emitentes = emitentes[fornecedor][2]
+                        cod_emitentes = emitentes[fornecedor][0]
+                        try:
+            
+                                cgc_fornecedores = fornecedores[cgc_emitentes][0]
+                        except:
+                                try:
+                                        cgc_fornecedores = fornecedores['0'+cgc_emitentes][0]
+                                        cgc_emitentes = '0'+cgc_emitentes
+                                except:
+                                        try:
+                                                cgc_fornecedores = fornecedores[cgc_emitentes[1:]][0]
+                                                cgc_emitentes = cgc_emitentes[1:]
+                                        except:
+                                                print(cgc_emitentes)
+                                                continue
+                                        
+                        if fornecedor in emitentes:               
+                                numNFF = formatedLine[1]
+                                saldo = formatedLine[2].replace('.', ',')
+                                dataNF = formatedLine[3]
+                                cnpj = formatedLine[6]
+                                dataVencimento = formatedLine[10]
+                                nomeFornecedor = emitentes[fornecedor][1]
+                                dictHeader[idHeader,numNFF,cnpj] = [idHeader,numNFF,saldo, dataNF, nomeFornecedor, cgc_fornecedores, dataVencimento]
                 return dictHeader
 dictHeader = geraHeader()
                     
@@ -34,13 +98,35 @@ def geraLine():
                 for line in tit_ap_line:
                         idHeader += 1
                         formatedLine =  line.strip().split("ϡ")
-                        numNFF = formatedLine[0]
-                        saldo = formatedLine[22]
-                        dataNF = formatedLine[15]
                         fornecedor = formatedLine[6]
-                        cnpj = formatedLine[6]
-                        dataVencimento = formatedLine[17]
-                        dictLine[idHeader,numNFF,cnpj] = [idHeader,numNFF,saldo, dataNF,fornecedor, cnpj, dataVencimento]
+                        try:
+                                formatedLine.append(emitentes[fornecedor][1])
+                        except:
+                                continue
+                        # esse eu peguei direto do emitentes
+                        cgc_emitentes = emitentes[fornecedor][2]
+                        cod_emitentes = emitentes[fornecedor][0]
+                        try:
+            
+                                cgc_fornecedores = fornecedores[cgc_emitentes][0]
+                        except:
+                                try:
+                                        cgc_fornecedores = fornecedores['0'+cgc_emitentes][0]
+                                        cgc_emitentes = '0'+cgc_emitentes
+                                except:
+                                        try:
+                                                cgc_fornecedores = fornecedores[cgc_emitentes[1:]][0]
+                                                cgc_emitentes = cgc_emitentes[1:]
+                                        except:
+                                                # print(cgc_emitentes)
+                                                continue
+                        if fornecedor in emitentes:
+                                numNFF = formatedLine[1]
+                                saldo = formatedLine[2].replace('.', ',')
+                                dataNF = formatedLine[3]
+                                cnpj = formatedLine[6]
+                                dataVencimento = formatedLine[10]
+                                dictLine[idHeader,numNFF,cnpj] = [idHeader,numNFF,saldo, dataNF,fornecedor, cnpj, dataVencimento]
                 return dictLine
 dictLine = geraLine()
 
@@ -52,10 +138,21 @@ def header():
                 idHeader = dictHeader[line][0]
                 numNFF = dictHeader[line][1]
                 saldo = dictHeader[line][2]
-                dataNF = dictHeader[line][3]
+
+                # TRATATIVA DA DATA NF
+                dt_nff = dictHeader[line][3].replace('-','/')
+                DATA_NFF_DATE = datetime.strptime(dt_nff,'%Y/%m/%d').date()
+                dataNF =  DATA_NFF_DATE.strftime('%d/%m/%Y')
+                # 
+
                 fornecedor = dictHeader[line][4]
                 cnpj = dictHeader[line][5]
-                dataVencimento = dictHeader[line][6]
+                
+                # TRATATIVA DA DATA DE VENCIMENTO
+                dt_venc = dictHeader[line][6].replace('-','/')
+                DATA_VENCIMENTO_DATE = datetime.strptime(dt_venc,'%Y/%m/%d').date()
+                dataVencimento = DATA_VENCIMENTO_DATE.strftime('%d/%m/%Y')
+                # 
                 
 
                 row.append(idHeader)#*Invoice ID
@@ -81,7 +178,7 @@ def header():
                 row.append(dataVencimento)# Terms Date
                 row.append("")# Goods Received Date
                 row.append("")# Invoice Received Date
-                row.append("2022/03/29")# Accounting Date
+                row.append("29/03/2022")# Accounting Date
                 row.append("BR_BAIXA_MANUAL")# Payment Method
                 row.append("ADIANTAMENTO")# Pay Group
                 row.append("N")# Pay Alone
@@ -161,7 +258,7 @@ def header():
                 row.append("N")# Global Attribute 1
                 
                 ws.append(row)
-        wb.save("Plan_Contas_AP_ADIANTAMENTO_HEADER_20220331_GOLIVE.xlsx")
+        wb.save("Plan_Contas_AP_ADIANTAMENTO_HEADER_TESTE.xlsx")
 
 header()
 
@@ -201,7 +298,7 @@ def line():
                 row.append("N")# 'Final Match'
                 row.append("1001.000.000.11470001.0000.0000.0.0")# 'Distribution Combination'
                 row.append("")# 'Distribution Set'
-                row.append("2022/04/30")# 'Accounting Date'
+                row.append("30/04/2022")# 'Accounting Date'
                 row.append("")# 'Overlay Account Segment'
                 row.append("")# 'Overlay Primary Balancing Segment'
                 row.append("")# 'Overlay Cost Center Segment'
@@ -338,6 +435,6 @@ def line():
 
                 ws.append(row)
 
-        wb.save("Plan_Contas_AP_ADIANTAMENTO_LINE_20220331_GOLIVE.xlsx")
+        wb.save("Plan_Contas_AP_ADIANTAMENTO_LINE_TESTE.xlsx")
 
 line()
